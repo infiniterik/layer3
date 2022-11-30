@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "layer3"
+version = "0.0.1"
+description = "Generate tasks for T5 training from text data"
+authors = ["rbose <rbose@ihmc.org>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.7.3"
+tqdm = "^4.64.1"
+pandas = "^1.5.2"
+datasets = "^2.7.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
