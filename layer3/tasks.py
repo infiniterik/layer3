@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from tqdm.auto import tqdm
 
 from .filters import *
@@ -57,12 +58,57 @@ class ClassifyTask(PrepareData):
     name = "ClassifyTask"
     #def __init__(self, filter_strategy=PostsWithTitles()):
     #    super().__init__(filter_strategy)
+
+    def post(self, element):
+        text = element.title
+        if not text:
+            text = ""
+        text = element.selftext
+        if type(element.selftext) is not str:
+            text = element.body
+        if type(text) is not str:
+            text = ""
+        return text
         
     def source_text(self, element, data):
-        return f'Classify Post: {element.title} {element.selftext} {element.body}'
+        return f'Classify Post: {self.post(element)}'
     
     def target_text(self, element, data):
-        return element.selftext + element.body
+        return element.subreddit
+
+class ToxicityTask(ClassifyTask):
+    def __init__(self, levels=None, pre_filter_strategy=PostsWithTitles(), post_filter_strategy=RemoveEmptyPost()):
+        super().__init__(pre_filter_strategy, post_filter_strategy)
+        if not levels:
+            self.levels = False
+        else:
+            self.levels = True
+            self.state = sorted([x for x in levels.items()], key=lambda x: x[1])
+    
+    def pre_hook(self, data):
+        if self.levels:
+            return
+        df = data["enrichments"].apply(lambda x: x["toxic"]).sort_values()
+        low = df.iloc[len(df)//3]
+        medium = df.iloc[2*(len(df)//3)]
+        self.levels = [("low", low), ("medium", medium), ("high", 1.0)]
+    
+    def post_hook(self, data):
+        if self.levels:
+            return
+        self.state = None
+
+    def tox_level(self, element):
+        for i in range(len(self.levels)):
+            if self.levels[i][1] < element.enrichments["toxic"]:
+                return self.levels[i-1]
+        return self.levels[-1][0]
+        
+    def source_text(self, element, data):
+        return f'Toxicity: {self.post(element)}'
+
+    def target_text(self, element, data):
+        return f"{self.tox_level(element)}"
 
 class ParentPostTask(PrepareData):
     name = "ParentPostTask"
