@@ -91,7 +91,7 @@ class ToxicityTask(ClassifyTask):
         df = data["enrichments"].apply(lambda x: x["toxic"]).sort_values()
         low = df.iloc[len(df)//3]
         medium = df.iloc[2*(len(df)//3)]
-        self.levels = [("low", low), ("medium", medium), ("high", 1.0)]
+        self.state = [("low", low), ("medium", medium), ("high", 1.0)]
     
     def post_hook(self, data):
         if self.levels:
@@ -100,9 +100,9 @@ class ToxicityTask(ClassifyTask):
 
     def tox_level(self, element):
         for i in range(len(self.levels)):
-            if self.levels[i][1] < element.enrichments["toxic"]:
-                return self.levels[i-1][0]
-        return self.levels[-1][0]
+            if self.state[i][1] < element.enrichments["toxic"]:
+                return self.state[i-1][0]
+        return self.state[-1][0]
 
     def source_text(self, element, data):
         return f'Toxicity: {self.post(element)}'
