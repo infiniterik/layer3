@@ -100,8 +100,8 @@ class ToxicityTask(ClassifyTask):
 
     def tox_level(self, element):
         for i in range(len(self.state)):
-            if self.state[i][1] < element.enrichments["toxic"]:
-                return self.state[i-1][0]
+            if self.state[i][1] >= element.enrichments["toxic"]:
+                return self.state[i][0]
         return self.state[-1][0]
 
     def source_text(self, element, data):
