@@ -120,13 +120,34 @@ class ParentPostTask(PrepareData):
         for d in data.itertuples(index=False):
             self.state[d.id] = d
     
+    def get_parent(self, element):
+        return self.state.get(element.parent_id.split("_")[-1], None)
+    
     def source_text(self, element, data):
         return f'Parent {element.subreddit}: {element.selftext}{element.body} </s>'
     
     def target_text(self, element, data):
         if element.parent_id == "":
             return ""
-        parent = self.state.get(element.parent_id.split("_")[-1], None)
+        parent = self.get_parent(element)
         if parent is not None:
             return f"{parent.title} {parent.selftext} {parent.body} </s>"
         return ""
+
+class DesiredToxicityTask(ParentPostTask, ToxicityTask):
+    def source_text(self, element, data):
+        parent = None
+        if element.parent_id:
+            parent = self.get_parent(element)
+            if parent:
+                t = self.post(parent)
+            else:
+                t = ""
+        elif element.title:
+            t = element.title
+        else:
+            return ""
+        return f"Subreddit: {element.subreddit} Toxicity: {self.tox_level(element)} Parent: {t}"
+    
+    def target_text(self, element, data):
+        return f"{self.post(element)}"
