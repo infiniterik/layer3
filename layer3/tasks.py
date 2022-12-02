@@ -81,10 +81,10 @@ class ToxicityTask(ClassifyTask):
         super().__init__(pre_filter_strategy, post_filter_strategy)
         if not levels:
             self.levels = True
-            self.state = [("low", 0.5), ("high", 1.0)]
+            self.toxicity = [("low", 0.5), ("high", 1.0)]
         else:
             self.levels = True
-            self.state = sorted([x for x in levels.items()], key=lambda x: x[1])
+            self.toxicity = sorted([x for x in levels.items()], key=lambda x: x[1])
     
     def pre_hook(self, data):
         if self.levels:
@@ -92,18 +92,19 @@ class ToxicityTask(ClassifyTask):
         df = data["enrichments"].apply(lambda x: x["toxic"]).sort_values()
         low = df.iloc[len(df)//3]
         medium = df.iloc[2*(len(df)//3)]
-        self.state = [("low", low), ("medium", medium), ("high", 1.0)]
+        self.toxicity = [("low", low), ("medium", medium), ("high", 1.0)]
     
     def post_hook(self, data):
         if self.levels:
             return
-        self.state = None
+        self.toxicity = None
 
     def tox_level(self, element):
-        for i in range(len(self.state)):
-            if self.state[i][1] >= element.enrichments["toxic"]:
-                return self.state[i][0]
-        return self.state[-1][0]
+        print(self.toxicity)
+        for i in range(len(self.toxicity)):
+            if self.toxicity[i][1] >= element.enrichments["toxic"]:
+                return self.toxicity[i][0]
+        return self.toxicity[-1][0]
 
     def source_text(self, element, data):
         return f'Toxicity: {self.post(element)}'
@@ -117,12 +118,15 @@ class ParentPostTask(PrepareData):
         super().__init__(pre_filter_strategy=pre_filter_strategy)
         
     def pre_hook(self, data):
-        self.state = {}
+        self.parents = {}
         for d in data.itertuples(index=False):
-            self.state[d.id] = d
+            self.parents[d.id] = d
+    
+    def post_hook(self, data):
+        self.parents = {}
     
     def get_parent(self, element):
-        return self.state.get(element.parent_id.split("_")[-1], None)
+        return self.parents.get(element.parent_id.split("_")[-1], None)
     
     def source_text(self, element, data):
         return f'Parent {element.subreddit}: {element.selftext}{element.body} </s>'
