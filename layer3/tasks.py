@@ -80,7 +80,8 @@ class ToxicityTask(ClassifyTask):
     def __init__(self, levels=None, pre_filter_strategy=PostsWithTitles(), post_filter_strategy=RemoveEmptyPost()):
         super().__init__(pre_filter_strategy, post_filter_strategy)
         if not levels:
-            self.levels = False
+            self.levels = True
+            self.state = [("low", 0.5), ("high", 1.0)]
         else:
             self.levels = True
             self.state = sorted([x for x in levels.items()], key=lambda x: x[1])
