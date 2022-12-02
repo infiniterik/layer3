@@ -100,7 +100,6 @@ class ToxicityTask(ClassifyTask):
         self.toxicity = None
 
     def tox_level(self, element):
-        print(self.toxicity)
         for i in range(len(self.toxicity)):
             if self.toxicity[i][1] >= element.enrichments["toxic"]:
                 return self.toxicity[i][0]
