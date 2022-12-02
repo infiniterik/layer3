@@ -21,3 +21,11 @@ class RemoveEmptyPost(FilterData):
     def filter(self, data):
         return data[(data.target_text != "") & (data.source_text != "")]
  
+class And(FilterData):
+    def __init__(self, f1, f2):
+        self.f1 = f1
+        self.f2 = f2
+        self.name = f"{self.f2.name} AND {self.f1.name}"
+    
+    def filter(self, data):
+        return self.f1.filter(self.f2.filter(data))

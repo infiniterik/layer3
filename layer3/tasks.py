@@ -139,6 +139,9 @@ class ParentPostTask(PrepareData):
         return ""
 
 class DesiredToxicityTask(ParentPostTask, ToxicityTask):
+    name = "DesiredToxicityTask"
+    def __init__(self, pre_filter_strategy=And(RemoveRemoved(), PostsWithTitles())):
+        super().__init__(pre_filter_strategy=pre_filter_strategy)
     def source_text(self, element, data):
         parent = None
         if element.parent_id:
