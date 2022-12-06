@@ -59,6 +59,9 @@ class ClassifyTask(PrepareData):
     #def __init__(self, filter_strategy=PostsWithTitles()):
     #    super().__init__(filter_strategy)
 
+    def remove_noise(self, text):
+        return " ".join([x for x in text.split("\n") if x and x != "\u00a0"])
+
     def post(self, element):
         text = element.title
         if not text:
@@ -68,7 +71,7 @@ class ClassifyTask(PrepareData):
             text = element.body
         if type(text) is not str:
             text = ""
-        return text
+        return self.remove_noise(text)
         
     def source_text(self, element, data):
         return f'Classify Post: {self.post(element)}'
@@ -76,40 +79,41 @@ class ClassifyTask(PrepareData):
     def target_text(self, element, data):
         return element.subreddit
 
-class ToxicityTask(ClassifyTask):
-    def __init__(self, levels=None, pre_filter_strategy=PostsWithTitles(), post_filter_strategy=RemoveEmptyPost()):
+class EnrichmentTask(ClassifyTask):
+    def __init__(self, enrichment_id=None, levels=None, pre_filter_strategy=PostsWithTitles(), post_filter_strategy=RemoveEmptyPost()):
         super().__init__(pre_filter_strategy, post_filter_strategy)
+        self.enrichment_id = enrichment_id
         if not levels:
             self.levels = True
-            self.toxicity = [("low", 0.5), ("high", 1.0)]
+            self.enrichment = [("low", 0.5), ("high", 1.0)]
         else:
             self.levels = True
-            self.toxicity = sorted([x for x in levels.items()], key=lambda x: x[1])
+            self.enrichment = sorted([x for x in levels.items()], key=lambda x: x[1])
     
     def pre_hook(self, data):
         if self.levels:
             return
-        df = data["enrichments"].apply(lambda x: x["toxic"]).sort_values()
+        df = data["enrichments"].apply(lambda x: x[self.enrichment_id]).sort_values()
         low = df.iloc[len(df)//3]
         medium = df.iloc[2*(len(df)//3)]
-        self.toxicity = [("low", low), ("medium", medium), ("high", 1.0)]
+        self.enrichment = [("low", low), ("medium", medium), ("high", 1.0)]
     
     def post_hook(self, data):
         if self.levels:
             return
         self.toxicity = None
 
-    def tox_level(self, element):
-        for i in range(len(self.toxicity)):
-            if self.toxicity[i][1] >= element.enrichments["toxic"]:
-                return self.toxicity[i][0]
-        return self.toxicity[-1][0]
+    def enrichment_level(self, element):
+        for i in range(len(self.enrichment)):
+            if self.enrichment[i][1] >= element.enrichments[self.enrichment_id]:
+                return self.enrichment[i][0]
+        return self.enrichment[-1][0]
 
     def source_text(self, element, data):
-        return f'Toxicity: {self.post(element)}'
+        return f'{self.enrichment_id}: {self.post(element)}'
 
     def target_text(self, element, data):
-        return f"{self.tox_level(element)}"
+        return f"{self.enrichment_level(element)}"
 
 class ParentPostTask(PrepareData):
     name = "ParentPostTask"
@@ -138,10 +142,12 @@ class ParentPostTask(PrepareData):
             return f"{parent.title} {parent.selftext} {parent.body} </s>"
         return ""
 
-class DesiredToxicityTask(ParentPostTask, ToxicityTask):
-    name = "DesiredToxicityTask"
-    def __init__(self, pre_filter_strategy=And(RemoveRemoved(), PostsWithTitles())):
+class DesiredEnrichmentTask(ParentPostTask, EnrichmentTask):
+    name = "DesiredEnrichmentTask"
+    def __init__(self, enrichment_id, pre_filter_strategy=And(RemoveRemoved(), PostsWithTitles())):
         super().__init__(pre_filter_strategy=pre_filter_strategy)
+        self.enrichment_id = enrichment_id
+
     def source_text(self, element, data):
         parent = None
         if element.parent_id:
@@ -154,7 +160,7 @@ class DesiredToxicityTask(ParentPostTask, ToxicityTask):
             t = element.title
         else:
             return ""
-        return f"Subreddit: {element.subreddit} Toxicity: {self.tox_level(element)} Parent: {t}"
+        return f"Subreddit: {element.subreddit} {self.enrichment_id}: {self.enrichment_level(element)} Parent: {t}"
     
     def target_text(self, element, data):
         return f"{self.post(element)}"
