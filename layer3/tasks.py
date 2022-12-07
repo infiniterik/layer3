@@ -116,7 +116,7 @@ class EnrichmentTask(ClassifyTask):
     def target_text(self, element, data):
         return f"{self.enrichment_level(element)}"
 
-class ParentPostTask(PrepareData):
+class ParentPostTask(ClassifyTask):
     name = "ParentPostTask"
     def __init__(self, pre_filter_strategy=FilterData()):
         super().__init__(pre_filter_strategy=pre_filter_strategy)
@@ -133,7 +133,7 @@ class ParentPostTask(PrepareData):
         return self.parents.get(element.parent_id.split("_")[-1], None)
     
     def source_text(self, element, data):
-        return f'Parent {element.subreddit}: {element.selftext}{element.body} </s>'
+        return f'Parent {element.subreddit}: {self.post(element)}</s>'
     
     def target_text(self, element, data):
         if not element.parent_id:
