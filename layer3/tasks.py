@@ -136,7 +136,7 @@ class ParentPostTask(PrepareData):
         return f'Parent {element.subreddit}: {element.selftext}{element.body} </s>'
     
     def target_text(self, element, data):
-        if element.parent_id == "":
+        if not element.parent_id:
             return ""
         parent = self.get_parent(element)
         if parent is not None:
