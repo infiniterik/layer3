@@ -58,9 +58,10 @@ class ClassifyTask(PrepareData):
     name = "ClassifyTask"
     #def __init__(self, filter_strategy=PostsWithTitles()):
     #    super().__init__(filter_strategy)
+    noise = {"\u00a0", "&gt;"}
 
     def remove_noise(self, text):
-        return " ".join([x for x in text.split("\n") if x and x != "\u00a0"])
+        return " ".join([x for x in text.split("\n") if x and x not in self.noise])
 
     def post(self, element):
         text = element.title
@@ -144,7 +145,7 @@ class ParentPostTask(PrepareData):
 
 class DesiredEnrichmentTask(ParentPostTask, EnrichmentTask):
     name = "DesiredEnrichmentTask"
-    def __init__(self, enrichment_id, pre_filter_strategy=And(RemoveRemoved(), PostsWithTitles())):
+    def __init__(self, enrichment_id, pre_filter_strategy=RemoveRemoved()):
         super().__init__(pre_filter_strategy=pre_filter_strategy)
         self.enrichment_id = enrichment_id
 
@@ -155,7 +156,7 @@ class DesiredEnrichmentTask(ParentPostTask, EnrichmentTask):
             if parent:
                 t = self.post(parent)
             else:
-                t = ""
+                return ""
         elif element.title:
             t = element.title
         else:
