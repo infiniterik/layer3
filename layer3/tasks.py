@@ -133,14 +133,14 @@ class ParentPostTask(ClassifyTask):
         return self.parents.get(element.parent_id.split("_")[-1], None)
     
     def source_text(self, element, data):
-        return f'Parent {element.subreddit}: {self.post(element)}</s>'
+        return f'Parent {element.subreddit}: {self.post(element)}'
     
     def target_text(self, element, data):
         if not element.parent_id:
             return ""
         parent = self.get_parent(element)
         if parent is not None:
-            return f"{parent.title} {parent.selftext} {parent.body} </s>"
+            return f"{self.post(parent)}"
         return ""
 
 class DesiredEnrichmentTask(ParentPostTask, EnrichmentTask):
