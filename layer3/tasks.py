@@ -160,7 +160,7 @@ class DesiredEnrichmentTask(ParentPostTask, EnrichmentTask):
             t = element.title
         else:
             return ""
-        return f"Subreddit: {element.subreddit} {self.enrichment_id}: {self.enrichment_level(element)} Parent: {t}"
+        return f"{self.enrichment_id}: {self.enrichment_level(element)} Parent: {t}"
     
     def target_text(self, element, data):
         return f"{self.post(element)}"
