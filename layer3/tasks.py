@@ -63,15 +63,14 @@ class ClassifyTask(PrepareData):
     def remove_noise(self, text):
         return " ".join([x for x in text.split("\n") if x and x not in self.noise])
 
-    def post(self, element):
-        text = element.title
-        if not text:
-            text = ""
-        text = element.selftext
-        if type(element.selftext) is not str:
-            text = element.body
-        if type(text) is not str:
-            text = ""
+    def get_post(self, element):
+        text = ""
+        if type(element.title) is str:
+            text = element.title+"\n"
+        if type(element.selftext) is str:
+            text += element.selftext
+        if type(element.body) is str:
+            text += element.body
         return self.remove_noise(text)
         
     def source_text(self, element, data):
@@ -145,7 +144,7 @@ class ParentPostTask(ClassifyTask):
 
 class DesiredEnrichmentTask(ParentPostTask, EnrichmentTask):
     name = "DesiredEnrichmentTask"
-    def __init__(self, enrichment_id, pre_filter_strategy=RemoveRemoved()):
+    def __init__(self, enrichment_id, pre_filter_strategy=And(RemoveRemoved(), PostsWithTitles())):
         super().__init__(pre_filter_strategy=pre_filter_strategy)
         self.enrichment_id = enrichment_id
 
